@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const errorsController = require('./controllers/error');
+const sequelize = require('./util/database');
 
 const app = express();
 
@@ -21,4 +22,10 @@ app.use(shopRoutes);
 
 app.use(errorsController.get404);
 
-app.listen(3001);
+// Check all models and create tables on db if doesn't exist
+sequelize.sync()
+    .then(result => {
+        //console.log(result);
+        app.listen(3001);
+    })
+    .catch(err => console.log(err));
