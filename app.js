@@ -9,6 +9,8 @@ const Product = require('./models/product');
 const User = require('./models/user');
 const Cart = require('./models/cart');
 const CartItem = require('./models/cart-item');
+const Order = require('./models/order');
+const OrderItem = require('./models/order-item');
 
 const app = express();
 
@@ -46,6 +48,12 @@ Cart.belongsTo(User);
 Cart.belongsToMany(Product, {through: CartItem});
 Product.belongsToMany(Cart, {through: CartItem});
 
+Order.belongsTo(User);
+User.hasMany(Order);
+
+Order.belongsToMany(Product, {through: OrderItem});
+
+
 // Check all models and create tables on db if doesn't exist
 // sequelize.sync({force: true}) overwrites the tables on start if need to update a table
 sequelize.sync()
@@ -60,8 +68,14 @@ sequelize.sync()
         return user;
     })
     .then(user => {
-        // TODO ensure only one cart gets created
-        return user.createCart();
+        return user.getCart()
+            .then(cart => {
+                if(cart)
+                    return cart;
+                else
+                    return user.createCart();
+            })
+            .catch(err => {console.log(err)});
     })
     .then(cart => {
         //console.log(user);
