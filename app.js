@@ -61,6 +61,8 @@ app.use(errorsController.get404);
 
 mongoose.connect(MONGODB_URI)
     .then(result => {
+        app.listen(3001);
+        /* Old logic used when authentication wasn't implemented
         User.findOne()
             .then(user => {
                 if(!user){
@@ -74,9 +76,8 @@ mongoose.connect(MONGODB_URI)
                     user.save();
                 }
             })
-            .catch(err => console.log(err));
+            .catch(err => console.log(err));*/
 
-        app.listen(3001);
     })
     .catch(err => console.log(err));
 
