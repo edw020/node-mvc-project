@@ -22,8 +22,7 @@ exports.getProduct = (req, res, next) => {
             res.render('shop/product-details', {
                 product: product,
                 pageTitle: product.title,
-                path: '/products',
-                isAuthenticated: req.session.isLoggedIn
+                path: '/products'
             });
         })
         .catch(err => console.log(err));
@@ -87,7 +86,7 @@ exports.postOrder = (req, res, next) => {
             const products = user.cart.items.map(item => ({quantity: item.quantity, product: {...item.productId._doc} }));
             const order = new Order({
                 user: {
-                    name: req.user.name,
+                    email: req.user.email,
                     userId: req.user // ._id is not require, mongoose will read the id out of req.user object
                 },
                 products: products
