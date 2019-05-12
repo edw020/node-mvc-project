@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoDBStore = require('connect-mongodb-session')(session);
 const csrf = require('csurf');
+const flash = require('connect-flash');
 
 const errorsController = require('./controllers/error');
 //const mongoConnect = require('./util/database').mongoConnect; OLD mongodb lib used for connection
@@ -35,6 +36,8 @@ app.use(session({secret: 'my secret', resave: false, saveUninitialized: false, s
 
 // Setting CSRF protection middleware into app
 app.use(csrfProtection);
+// Setting middleware for handling one-time-use session vars (errors in this case)
+app.use(flash());
 
 app.use((req, res, next) => {
     if(!req.session.user){

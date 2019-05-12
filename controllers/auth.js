@@ -4,19 +4,24 @@ const User = require('../models/user');
 
 exports.getLogin = (req, res, next) => {
     // const isLoggedIn = req.get('Cookie');
+    let message = req.flash('error');
+    message = message.length ? message[0] : null;
+
     console.log(req.session);
     res.render('auth/login', {
         path: '/login',
         pageTitle: 'Login',
-        isAuthenticated: req.session.isLoggedIn
+        errorMessage: message
     });
 };
 
 exports.getSignup = (req, res, next) => {
+    let message = req.flash('error');
+    message = message.length ? message[0] : null;
     res.render('auth/signup', {
         path: '/signup',
         pageTitle: 'Signup',
-        isAuthenticated: false
+        errorMessage: message
     });
 };
 
@@ -27,6 +32,7 @@ exports.postLogin = (req, res, next) => {
     User.findOne({email: email})
         .then(user => {
             if(!user){
+                req.flash('error', 'Invalid email or password.');
                 return res.redirect('/login');
             }
 
@@ -40,6 +46,7 @@ exports.postLogin = (req, res, next) => {
                             res.redirect('/');
                         });
                     }
+                    req.flash('error', 'Invalid email or password.');
                     res.redirect('/login');
                 })
                 .catch(err => {
@@ -58,6 +65,7 @@ exports.postSignup = (req, res, next) => {
     User.findOne({email: email})
         .then(user => {
             if(user){
+                req.flash('error', 'Email exists already, please pick a different one.');
                 return res.redirect('/signup');
             }
             bcrypt.hash(password, 12)
