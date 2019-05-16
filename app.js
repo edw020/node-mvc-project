@@ -40,16 +40,28 @@ app.use(csrfProtection);
 app.use(flash());
 
 app.use((req, res, next) => {
+    // locals only exists on views rendered so anything stored in locals will be available on any view file to be rendered
+    res.locals.isAuthenticated = req.session.isLoggedIn;
+    res.locals.csrfToken = req.csrfToken(); // fn provided by 'csurf' library
+    next();
+});
+
+app.use((req, res, next) => {
     if(!req.session.user){
         return next();
     }
 
     User.findById(req.session.user._id)
         .then(user => {
+            if(!user)
+                return next();
+
             req.user = user;
             next();
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            next(new Error(err));
+        });
 });
 
 // Will obtain the user for every incoming request and will store result in req param (Note that this middleware is registered before the routed ones)
@@ -62,18 +74,20 @@ app.use((req, res, next) => {
         .catch(err => console.log(err));
 });*/
 
-app.use((req, res, next) => {
-    // locals only exists on views rendered so anything stored in locals will be available on any view file to be rendered
-    res.locals.isAuthenticated = req.session.isLoggedIn;
-    res.locals.csrfToken = req.csrfToken(); // fn provided by 'csurf' library
-    next();
-});
-
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
 app.use(authRoutes);
+
+// Will set an error url with error content
+app.get('/500', errorsController.get500);
 // For sending 404 on no valid url
 app.use(errorsController.get404);
+// sets an error middleware (including error param first)
+app.use((error, req, res, next) => {
+    // res.status(error.httpStatusCode).render(...);
+    // res.redirect('/500');
+    res.status(500).render('500', { pageTitle: 'Error', path: '' });
+});
 
 mongoose.connect(MONGODB_URI)
     .then(result => {
