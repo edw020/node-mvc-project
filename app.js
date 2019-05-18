@@ -10,6 +10,8 @@ const flash = require('connect-flash');
 const multer = require('multer');
 
 const errorsController = require('./controllers/error');
+const shopController = require('./controllers/shop');
+const isAuth = require('./middleware/is-auth');
 //const mongoConnect = require('./util/database').mongoConnect; OLD mongodb lib used for connection
 const User = require('./models/user');
 
@@ -55,15 +57,12 @@ app.use('/images', express.static(path.join(__dirname, 'images')));
 // Set's up session using library and includes store config var to indicate saving sessions on mongodb
 app.use(session({secret: 'my secret', resave: false, saveUninitialized: false, store: store}));
 
-// Setting CSRF protection middleware into app
-app.use(csrfProtection);
 // Setting middleware for handling one-time-use session vars (errors in this case)
 app.use(flash());
 
 app.use((req, res, next) => {
     // locals only exists on views rendered so anything stored in locals will be available on any view file to be rendered
     res.locals.isAuthenticated = req.session.isLoggedIn;
-    res.locals.csrfToken = req.csrfToken(); // fn provided by 'csurf' library
     next();
 });
 
@@ -94,6 +93,17 @@ app.use((req, res, next) => {
         })
         .catch(err => console.log(err));
 });*/
+// This request will be excluded from CSRF protection
+app.post('/create-order', isAuth, shopController.postOrder);
+
+// Setting CSRF protection middleware into app
+app.use(csrfProtection);
+
+app.use((req, res, next) => {
+    // locals only exists on views rendered so anything stored in locals will be available on any view file to be rendered
+    res.locals.csrfToken = req.csrfToken(); // fn provided by 'csurf' library
+    next();
+});
 
 app.use('/admin', adminRoutes);
 app.use(shopRoutes);
@@ -107,6 +117,7 @@ app.use(errorsController.get404);
 app.use((error, req, res, next) => {
     // res.status(error.httpStatusCode).render(...);
     // res.redirect('/500');
+    console.log(error);
     res.status(500).render('500', { pageTitle: 'Error', path: '' });
 });
 

@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PDFDocument = require('pdfkit');
+const stripe = require('stripe')('sk_test_bkyHzcwyIJGST1zsjUf7DGNe00e7zIbwiB');
 
 const Product = require('../models/product');
 const Order = require('../models/order');
@@ -139,10 +140,35 @@ exports.postCartDeleteProduct = (req, res, next) => {
         });
 };
 
-exports.postOrder = (req, res, next) => {
+exports.getCheckout = (req, res, next) => {
     req.user.populate('cart.items.productId')
         .execPopulate() // Will call the populate function which returns a promise to process
         .then(user => {
+            const products = user.cart.items;
+            res.render('shop/checkout', {
+                path: '/checkout',
+                pageTitle: 'Checkout',
+                products: products,
+                totalSum: products.reduce((total, product) => (total += (product.quantity * product.productId.price)), 0)
+            });
+        })
+        .catch(err => {
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
+        });
+};
+
+exports.postOrder = (req, res, next) => {
+
+    const token = req.body.stripeToken;
+    let totalSum = 0;
+
+    req.user.populate('cart.items.productId')
+        .execPopulate() // Will call the populate function which returns a promise to process
+        .then(user => {
+            totalSum = user.cart.items.reduce((total, product) => (total += product.quantity * product.productId.price), 0);
+
             const products = user.cart.items.map(item => ({quantity: item.quantity, product: {...item.productId._doc} }));
             const order = new Order({
                 user: {
@@ -154,6 +180,14 @@ exports.postOrder = (req, res, next) => {
             return order.save();
         })
         .then(result => {
+            const charge = stripe.charges.create({
+                amount: totalSum * 100,
+                currency: 'usd',
+                description: 'Demo Order',
+                source: token,
+                metadata: { order_id: result._id.toString() }
+            });
+
             return req.user.clearCart();
         })
         .then(() => {
@@ -235,10 +269,3 @@ exports.getInvoice = (req, res, next) => {
         })
         .catch(err => next(err));
 };
-
-/*exports.getCheckout = (req, res, next) => {
-    res.render('shop/checkout', {
-        path: '/checkout',
-        pageTitle: 'Checkout'
-    });
-};*/
