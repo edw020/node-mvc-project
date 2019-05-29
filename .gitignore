@@ -2,3 +2,6 @@ node_modules
 data
 images
 .idea/*
+server.cert
+server.key
+access.log

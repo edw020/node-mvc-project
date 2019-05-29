@@ -1,4 +1,6 @@
 const path = require('path');
+const fs = require('fs');
+const https = require('https');
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -8,6 +10,9 @@ const MongoDBStore = require('connect-mongodb-session')(session);
 const csrf = require('csurf');
 const flash = require('connect-flash');
 const multer = require('multer');
+const helmet = require('helmet');
+const compression = require('compression');
+const morgan = require('morgan');
 
 const errorsController = require('./controllers/error');
 const shopController = require('./controllers/shop');
@@ -15,7 +20,7 @@ const isAuth = require('./middleware/is-auth');
 //const mongoConnect = require('./util/database').mongoConnect; OLD mongodb lib used for connection
 const User = require('./models/user');
 
-const MONGODB_URI = 'mongodb+srv://edward:P4ssw0rd2o19@cluster0-hehis.mongodb.net/shop';
+const MONGODB_URI = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@cluster0-hehis.mongodb.net/${process.env.MONGO_DEFAULT_DATABASE}`;
 
 const app = express();
 const store = new MongoDBStore({
@@ -24,6 +29,10 @@ const store = new MongoDBStore({
 });
 // Initializing CSRF protection middleware from lib with default config
 const csrfProtection = csrf();
+
+// Defining key and cert values for SSL implementation
+// const privateKey = fs.readFileSync('server.key');
+// const certificate = fs.readFileSync('server.cert');
 
 // Setting storage config object for defining 'images' as storage folder, and a unique filename
 const fileStorage = multer.diskStorage({
@@ -48,6 +57,16 @@ app.set('views', 'views');
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
 const authRoutes = require('./routes/auth');
+
+// Defining stream config to include on morgan setup to define were to log
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {flags: 'a'});
+
+// Using helmet for adding extra protection for prod use
+app.use(helmet());
+// Using compression for reduce size on assets
+app.use(compression());
+// Setting morgan for logging
+app.use(morgan('combined', {stream: accessLogStream}));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 // Sets multer MW so it can parse on post requests for any file named 'image'.
@@ -123,6 +142,12 @@ app.use((error, req, res, next) => {
 
 mongoose.connect(MONGODB_URI)
     .then(result => {
+        /*
+        Configuration enabling SSL encryption
+        https
+            .createServer({key: privateKey, cert: certificate}, app)
+            .listen(process.env.PORT || 3000);*/
+
         app.listen(3001);
         /* Old logic used when authentication wasn't implemented
         User.findOne()
