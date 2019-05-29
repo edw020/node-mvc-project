@@ -1,27 +1,45 @@
-const path = require('path');
-
 const express = require('express');
+const { body } = require('express-validator/check');
 
 const adminController = require('../controllers/admin');
+const isAuth = require('../middleware/is-auth');
 
 const router = express.Router();
 
 
 // /admin/add-product => GET
-router.get('/add-product', adminController.getAddProduct);
-
-// /admin/products => GET
-router.get('/products', adminController.getProducts);
+router.get('/add-product', isAuth, adminController.getAddProduct);
 
 // /admin/add-product => POST
-router.post('/add-product', adminController.postAddProduct);
+router.post('/add-product', [
+    body('title', 'Invalid value for Title')
+        .isString()
+        .isLength({min: 3})
+        .trim(),
+    body('price', 'Invalid value for Price').isFloat(),
+    body('description', 'Invalid value for Description')
+        .isLength({min: 5, max: 400})
+        .trim()
+], isAuth, adminController.postAddProduct);
+
+// /admin/products => GET
+router.get('/products', isAuth, adminController.getProducts);
 
 // /admin/edit-product => GET
-router.get('/edit-product/:productId', adminController.getEditProduct);
+router.get('/edit-product/:productId', isAuth, adminController.getEditProduct);
 
 // /admin/edit-product => POST
-router.post('/edit-product', adminController.postEditProduct);
+router.post('/edit-product', [
+    body('title', 'Invalid value for Title')
+        .isString()
+        .isLength({min: 3})
+        .trim(),
+    body('price', 'Invalid value for Price').isFloat(),
+    body('description', 'Invalid value for Description')
+        .isLength({min: 5, max: 400})
+        .trim()
+], isAuth, adminController.postEditProduct);
 
-router.post('/delete-product', adminController.postDeleteProduct);
+router.delete('/product/:productId', isAuth, adminController.deleteProduct);
 
 module.exports = router;
