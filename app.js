@@ -148,7 +148,7 @@ mongoose.connect(MONGODB_URI)
             .createServer({key: privateKey, cert: certificate}, app)
             .listen(process.env.PORT || 3000);*/
 
-        app.listen(3001);
+        app.listen(process.env.PORT || 3000);
         /* Old logic used when authentication wasn't implemented
         User.findOne()
             .then(user => {
